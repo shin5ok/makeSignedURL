@@ -78,6 +78,7 @@ func generateV4GetObjectSignedURL(bucket, object string) (ResultSignedURL, error
 	if err != nil {
 		log.Println(err)
 	}
+	log.Println(creds.JSON)
 	conf, err := google.JWTConfigFromJSON(creds.JSON, storage.ScopeReadOnly)
 	if err != nil {
 		return ResultSignedURL{}, fmt.Errorf("google.JWTConfigFromJSON: %v", err)
