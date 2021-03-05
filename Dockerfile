@@ -1,5 +1,7 @@
 FROM golang:1.16-alpine
 
+WORKDIR app
+
 COPY . .
 # RUN rm -f go.mod
 ENV GOPATH=
@@ -8,6 +10,6 @@ ENV GOPATH=
 ARG CGO_ENABLED=0
 ARG GOOS=linux
 ARG GOARCH=amd64
-RUN go build -o signedurl
+RUN go build -o signedurl .
 
-CMD ["/signedurl"]
+CMD ["/app/signedurl"]
