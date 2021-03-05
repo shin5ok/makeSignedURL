@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2/google"
 )
 
@@ -16,8 +19,21 @@ var object = os.Getenv("OBJECT")
 var serviceAccount = os.Getenv("SERVICE_ACCOUNT")
 
 func main() {
-	u, _ := generateV4GetObjectSignedURL(bucket, object, serviceAccount)
-	fmt.Println(u)
+	r := gin.Default()
+
+	r.POST("/", func(c *gin.Context) {
+		// storage.googleapis.com/projects/_/buckets/kawanos-dists/objects/foo/bar/services
+		subject := c.Request.Header.Get("ce-subject")
+		t := strings.Split(subject, "/")
+		bucket := t[4]
+		object := strings.Join(t[6:], "/")
+		u, _ := generateV4GetObjectSignedURL(bucket, object, serviceAccount)
+		path := fmt.Sprintf("gs://%s/%s", bucket, object)
+		log.Println(u)
+		c.JSON(http.StatusOK, gin.H{"Path": path})
+	})
+
+	r.Run(":8080")
 }
 
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
