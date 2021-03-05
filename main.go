@@ -16,9 +16,10 @@ import (
 )
 
 var apiUrl = "https://api.uname.link/slack"
-var bucket = os.Getenv("BUCKET")
-var object = os.Getenv("OBJECT")
-var serviceAccount = os.Getenv("SERVICE_ACCOUNT")
+var bucketMatch = os.Getenv("BUCKET")
+var objectMatch = os.Getenv("OBJECT")
+
+// var serviceAccount = os.Getenv("SERVICE_ACCOUNT")
 
 // var slackChannel = os.Getenv("SLACK_CHANNEL")
 // var slackURL = os.Getenv("SLACK_URL")
@@ -32,7 +33,9 @@ func main() {
 		t := strings.Split(subject, "/")
 		bucket := t[4]
 		object := strings.Join(t[6:], "/")
-		r, _ := generateV4GetObjectSignedURL(bucket, object, serviceAccount)
+		// not matching pattern then just return empty
+		log.Printf("bucket:%s, object:%s, subject:%s\n", bucket, object, subject)
+		r, _ := generateV4GetObjectSignedURL(bucket, object)
 		path := fmt.Sprintf("gs://%s/%s", bucket, object)
 		result := fmt.Sprintf("SignURL: %q\nExpire: %s", r.SignedURL, r.Expire)
 		notifySlack(result)
@@ -56,7 +59,7 @@ type ResultSignedURL struct {
 }
 
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
-func generateV4GetObjectSignedURL(bucket, object, serviceAccount string) (ResultSignedURL, error) {
+func generateV4GetObjectSignedURL(bucket, object string) (ResultSignedURL, error) {
 	ctx := context.Background()
 	// bucket := "bucket-name"
 	// object := "object-name"
@@ -69,8 +72,7 @@ func generateV4GetObjectSignedURL(bucket, object, serviceAccount string) (Result
 
 	creds, err := google.FindDefaultCredentials(ctx, storage.ScopeReadOnly)
 	if err != nil {
-		// サンプル用です。適切にエラーハンドリングしてください。
-		panic(err)
+		log.Fatal(err)
 	}
 	conf, err := google.JWTConfigFromJSON(creds.JSON, storage.ScopeReadOnly)
 	if err != nil {
