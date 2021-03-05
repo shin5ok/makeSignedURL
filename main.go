@@ -35,7 +35,10 @@ func main() {
 		object := strings.Join(t[6:], "/")
 		// not matching pattern then just return empty
 		log.Printf("bucket:%s, object:%s, subject:%s\n", bucket, object, subject)
-		r, _ := generateV4GetObjectSignedURL(bucket, object)
+		r, err := generateV4GetObjectSignedURL(bucket, object)
+		if err != nil {
+			fmt.Println(err)
+		}
 		path := fmt.Sprintf("gs://%s/%s", bucket, object)
 		result := fmt.Sprintf("SignURL: %q\nExpire: %s", r.SignedURL, r.Expire)
 		notifySlack(result)
@@ -60,6 +63,7 @@ type ResultSignedURL struct {
 
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
 func generateV4GetObjectSignedURL(bucket, object string) (ResultSignedURL, error) {
+	log.Println("start generate")
 	ctx := context.Background()
 	// bucket := "bucket-name"
 	// object := "object-name"
@@ -72,7 +76,7 @@ func generateV4GetObjectSignedURL(bucket, object string) (ResultSignedURL, error
 
 	creds, err := google.FindDefaultCredentials(ctx, storage.ScopeReadOnly)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	conf, err := google.JWTConfigFromJSON(creds.JSON, storage.ScopeReadOnly)
 	if err != nil {
@@ -86,6 +90,7 @@ func generateV4GetObjectSignedURL(bucket, object string) (ResultSignedURL, error
 		PrivateKey:     conf.PrivateKey,
 		Expires:        expire,
 	}
+	fmt.Println(opts)
 	u, err := storage.SignedURL(bucket, object, opts)
 	if err != nil {
 		return ResultSignedURL{}, fmt.Errorf("storage.SignedURL: %v", err)
