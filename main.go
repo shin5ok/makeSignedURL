@@ -32,11 +32,12 @@ func main() {
 		t := strings.Split(subject, "/")
 		bucket := t[4]
 		object := strings.Join(t[6:], "/")
-		u, _ := generateV4GetObjectSignedURL(bucket, object, serviceAccount)
+		r, _ := generateV4GetObjectSignedURL(bucket, object, serviceAccount)
 		path := fmt.Sprintf("gs://%s/%s", bucket, object)
-		notifySlack(fmt.Sprintf("SignURL: %q", u))
+		result := fmt.Sprintf("SignURL: %q\nExpire: %s", r.SignedURL, r.Expire)
+		notifySlack(result)
 		// log.Println(u)
-		c.JSON(http.StatusOK, gin.H{"Path": path, "u": u})
+		c.JSON(http.StatusOK, gin.H{"Path": path, "result": result})
 	})
 
 	r.Run(":8080")
@@ -49,8 +50,13 @@ func notifySlack(message string) error {
 	return nil
 }
 
+type ResultSignedURL struct {
+	SignedURL string
+	Expire    time.Time
+}
+
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
-func generateV4GetObjectSignedURL(bucket, object, serviceAccount string) (string, error) {
+func generateV4GetObjectSignedURL(bucket, object, serviceAccount string) (ResultSignedURL, error) {
 	ctx := context.Background()
 	// bucket := "bucket-name"
 	// object := "object-name"
@@ -68,23 +74,25 @@ func generateV4GetObjectSignedURL(bucket, object, serviceAccount string) (string
 	}
 	conf, err := google.JWTConfigFromJSON(creds.JSON, storage.ScopeReadOnly)
 	if err != nil {
-		return "", fmt.Errorf("google.JWTConfigFromJSON: %v", err)
+		return ResultSignedURL{}, fmt.Errorf("google.JWTConfigFromJSON: %v", err)
 	}
+	expire := time.Now().Add(24 * 7 * time.Hour)
 	opts := &storage.SignedURLOptions{
 		Scheme:         storage.SigningSchemeV4,
 		Method:         "GET",
 		GoogleAccessID: conf.Email,
 		PrivateKey:     conf.PrivateKey,
-		Expires:        time.Now().Add(24 * 7 * time.Hour),
+		Expires:        expire,
 	}
 	u, err := storage.SignedURL(bucket, object, opts)
 	if err != nil {
-		return "", fmt.Errorf("storage.SignedURL: %v", err)
+		return ResultSignedURL{}, fmt.Errorf("storage.SignedURL: %v", err)
 	}
 
 	log.Printf("Generated GET signed URL:")
 	log.Printf("%q\n", u)
 	log.Printf("You can use this URL with any user agent, for example:")
 	log.Printf("curl %q\n", u)
-	return u, nil
+	log.Printf("Expire: %s", expire)
+	return ResultSignedURL{u, expire}, nil
 }
