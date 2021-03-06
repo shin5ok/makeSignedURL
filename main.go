@@ -76,11 +76,13 @@ func generateV4GetObjectSignedURL(bucket, object string) (ResultSignedURL, error
 
 	creds, err := google.FindDefaultCredentials(ctx, storage.ScopeReadOnly)
 	if err != nil {
-		log.Println(err)
+		log.Printf("------\n1.%s--------\n", err)
 	}
+	// ComputeTokenSource
 	log.Println(creds.JSON)
 	conf, err := google.JWTConfigFromJSON(creds.JSON, storage.ScopeReadOnly)
 	if err != nil {
+		log.Printf("------\n2.%s--------\n", err)
 		return ResultSignedURL{}, fmt.Errorf("google.JWTConfigFromJSON: %v", err)
 	}
 	expire := time.Now().Add(24 * 7 * time.Hour)
