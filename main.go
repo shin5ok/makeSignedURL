@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -16,8 +15,6 @@ import (
 )
 
 var apiUrl = "https://api.uname.link/slack"
-var bucketMatch = os.Getenv("BUCKET")
-var objectMatch = os.Getenv("OBJECT")
 
 // var serviceAccount = os.Getenv("SERVICE_ACCOUNT")
 
